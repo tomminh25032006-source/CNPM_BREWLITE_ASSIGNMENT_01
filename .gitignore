@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+coverage/
+*.log
+*.tsbuildinfo
+next-env.d.ts
+
+# Biến môi trường thật – chỉ commit file .env.example
+.env
+.env*.local
