@@ -9,9 +9,9 @@ export interface ReceiptLine {
   amount: number;
 }
 
-/** Hóa đơn giấy: mép răng cưa, chữ số căn phải, đường chấm phân cách. */
+/** Khối tóm tắt đơn hàng: danh sách món, tạm tính, giảm giá, tổng cộng. */
 export function Receipt({
-  title = 'Hóa đơn',
+  title = 'Tóm tắt đơn hàng',
   lines,
   subtotal,
   discount = 0,
@@ -30,50 +30,46 @@ export function Receipt({
   footer?: ReactNode;
 }) {
   return (
-    <div className="receipt-edge bg-card px-6 py-8 shadow-[0_1px_0_var(--line),0_12px_30px_-18px_rgba(42,30,23,0.35)]">
-      <div className="text-center">
-        <p className="font-display text-2xl italic">BrewLite</p>
-        <p className="label-caps mt-1">{title}</p>
-      </div>
-      <div className="my-5 border-t-2 border-dashed border-line" />
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-6 shadow-brew-card">
+      <h2 className="mb-4 text-base font-extrabold text-stone-900">{title}</h2>
 
       {lines && lines.length > 0 && (
         <>
-          <ul className="space-y-3 text-sm">
+          <ul className="space-y-3 text-xs">
             {lines.map((l) => (
               <li key={l.key} className="flex gap-3">
-                <span className="w-7 shrink-0 tabular-nums text-muted">{l.qty}×</span>
+                <span className="w-6 shrink-0 font-bold tabular-nums text-amber-800">{l.qty}×</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block">{l.name}</span>
-                  {l.detail && <span className="block truncate text-xs text-muted">{l.detail}</span>}
+                  <span className="block font-bold text-stone-900">{l.name}</span>
+                  {l.detail && <span className="block truncate text-[11px] text-stone-500">{l.detail}</span>}
                 </span>
-                <span className="tabular-nums">{formatVnd(l.amount)}</span>
+                <span className="font-semibold tabular-nums text-stone-700">{formatVnd(l.amount)}</span>
               </li>
             ))}
           </ul>
-          <div className="my-5 border-t-2 border-dashed border-line" />
+          <div className="my-4 border-t border-dashed border-stone-200" />
         </>
       )}
 
       {children}
 
-      <dl className="space-y-2 text-sm">
+      <dl className="space-y-2 text-xs">
         <div className="flex justify-between">
-          <dt className="text-ink-soft">Tạm tính</dt>
-          <dd className="tabular-nums">{formatVnd(subtotal)}</dd>
+          <dt className="text-stone-500">Tạm tính</dt>
+          <dd className="font-semibold tabular-nums text-stone-800">{formatVnd(subtotal)}</dd>
         </div>
         {discount > 0 && (
-          <div className="flex justify-between text-success">
+          <div className="flex justify-between text-emerald-700">
             <dt>Giảm giá{discountLabel ? ` (${discountLabel})` : ''}</dt>
-            <dd className="tabular-nums">−{formatVnd(discount)}</dd>
+            <dd className="font-semibold tabular-nums">−{formatVnd(discount)}</dd>
           </div>
         )}
       </dl>
-      <div className="mt-4 flex items-baseline justify-between border-t border-ink/80 pt-4">
-        <span className="label-caps text-ink!">Tổng cộng</span>
-        <span className="font-display text-3xl tabular-nums">{formatVnd(total)}</span>
+      <div className="mt-4 flex items-baseline justify-between border-t border-stone-200 pt-4">
+        <span className="text-sm font-bold text-stone-900">Tổng cộng</span>
+        <span className="text-xl font-black tabular-nums text-amber-900">{formatVnd(total)}</span>
       </div>
-      {footer && <div className="mt-6">{footer}</div>}
+      {footer && <div className="mt-5">{footer}</div>}
     </div>
   );
 }

@@ -3,16 +3,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { RequireAuth } from '@/components/RequireAuth';
-import { Alert, ErrorState, PageTitle, Spinner } from '@/components/ui';
+import { Alert, ErrorState, Page, PageSpinner, PageTitle } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
 import { formatDateTime, orderCode } from '@/lib/format';
 import type { Order, OrderStatus } from '@/lib/types';
 
 /** Bảng điều phối của barista (phần mở rộng ngoài MVP) – minh họa Order State Machine. */
-const COLUMNS: { status: OrderStatus; title: string; next?: { to: OrderStatus; label: string } }[] = [
-  { status: 'PAID', title: 'Chờ pha', next: { to: 'PREPARING', label: 'Nhận pha' } },
-  { status: 'PREPARING', title: 'Đang pha', next: { to: 'READY', label: 'Pha xong' } },
-  { status: 'READY', title: 'Chờ khách nhận', next: { to: 'COMPLETED', label: 'Đã giao khách' } },
+const COLUMNS: { status: OrderStatus; title: string; dot: string; next?: { to: OrderStatus; label: string } }[] = [
+  { status: 'PAID', title: 'Chờ pha', dot: 'bg-emerald-500', next: { to: 'PREPARING', label: 'Nhận pha' } },
+  { status: 'PREPARING', title: 'Đang pha', dot: 'bg-orange-500', next: { to: 'READY', label: 'Pha xong' } },
+  { status: 'READY', title: 'Chờ khách nhận', dot: 'bg-sky-500', next: { to: 'COMPLETED', label: 'Đã giao khách' } },
 ];
 
 export default function StaffPage() {
@@ -43,52 +43,63 @@ function StaffBoard() {
   });
 
   return (
-    <>
+    <Page width="max-w-6xl">
       <PageTitle eyebrow="Nhân viên" title="Quầy pha chế">
-        <p className="text-sm">Đơn tự cập nhật mỗi 4 giây. Mỗi nút chỉ cho phép bước chuyển hợp lệ tiếp theo.</p>
+        Đơn tự cập nhật mỗi 4 giây. Mỗi nút chỉ cho phép bước chuyển hợp lệ tiếp theo.
       </PageTitle>
 
-      {error && <div className="mx-auto mb-6 max-w-xl"><Alert>{error}</Alert></div>}
+      {error && (
+        <div className="mb-6 max-w-xl">
+          <Alert>{error}</Alert>
+        </div>
+      )}
 
       {isError ? (
         <ErrorState message={errorMessage(loadError)} onRetry={() => refetch()} />
       ) : isLoading ? (
-        <div className="grid place-items-center py-20 text-muted"><Spinner className="size-6" /></div>
+        <PageSpinner />
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
           {COLUMNS.map((col) => {
             const orders = (data ?? []).filter((o) => o.status === col.status);
             return (
-              <section key={col.status} className="rounded-2xl bg-paper-2/70 p-3">
+              <section key={col.status} className="rounded-2xl border border-stone-200/80 bg-stone-100/70 p-3">
                 <header className="flex items-center justify-between px-2 pb-3 pt-1">
-                  <h2 className="font-display text-xl">{col.title}</h2>
-                  <span className="grid min-w-7 place-items-center rounded-full bg-card px-2 py-0.5 text-sm font-semibold tabular-nums">{orders.length}</span>
+                  <h2 className="flex items-center gap-2 text-sm font-extrabold text-stone-900">
+                    <span className={`size-2 rounded-full ${col.dot}`} />
+                    {col.title}
+                  </h2>
+                  <span className="grid min-w-7 place-items-center rounded-full bg-white px-2 py-0.5 text-xs font-bold tabular-nums text-stone-700 shadow-sm">
+                    {orders.length}
+                  </span>
                 </header>
                 <div className="space-y-3">
-                  {orders.length === 0 && <p className="px-2 py-6 text-center text-sm text-muted">Trống</p>}
+                  {orders.length === 0 && <p className="px-2 py-6 text-center text-xs text-stone-400">Trống</p>}
                   {orders.map((o) => (
-                    <article key={o.id} className="panel p-4 animate-rise">
+                    <article key={o.id} className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-sm animate-rise">
                       <div className="flex items-baseline justify-between">
-                        <span className="font-display text-2xl tabular-nums">{orderCode(o.id)}</span>
-                        <span className="text-xs text-muted">{formatDateTime(o.createdAt).split(' ')[0]}</span>
+                        <span className="text-lg font-black tabular-nums text-amber-900">{orderCode(o.id)}</span>
+                        <span className="text-[11px] text-stone-400">{formatDateTime(o.createdAt).split(' ')[0]}</span>
                       </div>
-                      <p className="text-xs text-ink-soft">{o.user?.fullName}</p>
-                      <ul className="mt-3 space-y-1 border-t border-dashed border-line pt-3 text-sm">
+                      <p className="text-xs font-semibold text-stone-500">{o.user?.fullName}</p>
+                      <ul className="mt-3 space-y-1 border-t border-dashed border-stone-200 pt-3 text-xs text-stone-800">
                         {o.items.map((it) => (
                           <li key={it.id}>
-                            <span className="font-semibold tabular-nums">{it.qty}×</span> {it.productName}{' '}
-                            <span className="text-ink-soft">({it.size})</span>
-                            {it.toppings.length > 0 && <span className="block pl-5 text-xs text-muted">+ {it.toppings.map((t) => t.name).join(', ')}</span>}
+                            <span className="font-bold tabular-nums text-amber-800">{it.qty}×</span> {it.productName}{' '}
+                            <span className="text-stone-500">({it.size})</span>
+                            {it.toppings.length > 0 && (
+                              <span className="block pl-5 text-[11px] text-stone-400">+ {it.toppings.map((t) => t.name).join(', ')}</span>
+                            )}
                           </li>
                         ))}
                       </ul>
-                      {o.note && <p className="mt-2 text-xs italic text-accent">“{o.note}”</p>}
+                      {o.note && <p className="mt-2 text-xs italic text-amber-800">“{o.note}”</p>}
                       <div className="mt-4 flex gap-2">
                         {col.next && (
                           <button
                             onClick={() => move.mutate({ id: o.id, status: col.next!.to })}
                             disabled={move.isPending}
-                            className="btn-primary h-10 flex-1 text-xs"
+                            className="btn-primary h-9 flex-1 text-xs"
                           >
                             {col.next.label}
                           </button>
@@ -97,7 +108,7 @@ function StaffBoard() {
                           <button
                             onClick={() => move.mutate({ id: o.id, status: 'CANCELLED' })}
                             disabled={move.isPending}
-                            className="btn-outline h-10 px-4 text-xs"
+                            className="btn-outline h-9 px-4 text-xs"
                           >
                             Hủy
                           </button>
@@ -111,6 +122,6 @@ function StaffBoard() {
           })}
         </div>
       )}
-    </>
+    </Page>
   );
 }

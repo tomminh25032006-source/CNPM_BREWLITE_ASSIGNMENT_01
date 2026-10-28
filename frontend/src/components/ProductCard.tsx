@@ -1,90 +1,79 @@
 'use client';
 
-import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { formatVnd } from '@/lib/format';
 import type { Product } from '@/lib/types';
-import { useCart } from '@/store/cart';
-import { useToast } from '@/store/toast';
-import { PlusIcon } from './icons';
 
 const LOW_STOCK = 10;
 
-export function ProductCard({ product, index }: { product: Product; index: number }) {
-  const add = useCart((s) => s.add);
-  const toast = useToast((s) => s.push);
+export function ProductCard({ product, onSelect }: { product: Product; onSelect: (p: Product) => void }) {
   const soldOut = product.stock <= 0;
-
-  const quickAdd = () => {
-    add({
-      productId: product.id,
-      name: product.name,
-      imageUrl: product.imageUrl,
-      size: 'S',
-      toppings: [],
-      unitPrice: product.price,
-      qty: 1,
-    });
-    toast({ title: `Đã thêm ${product.name}`, description: 'Size Nhỏ · không topping', action: { label: 'Xem giỏ', href: '/cart' } });
-  };
 
   return (
     <article
-      className="group relative flex flex-col animate-rise"
-      style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+      onClick={() => onSelect(product)}
+      className="group flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-brew-card transition-all duration-200 hover:-translate-y-1 hover:shadow-brew-float"
     >
-      <Link href={`/products/${product.id}`} className="flex flex-1 flex-col rounded-[28px] p-2 transition hover:bg-card">
-        <div className="arch relative aspect-[4/4.4] overflow-hidden border border-line bg-print">
+      <div>
+        <div className="relative h-44 w-full overflow-hidden bg-stone-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={product.imageUrl}
-            alt=""
-            className={`absolute inset-0 size-full object-contain p-6 pt-9 transition duration-500 group-hover:-translate-y-1 group-hover:scale-[1.03] ${
-              soldOut ? 'opacity-40 grayscale' : ''
-            }`}
+            alt={product.name}
+            loading="lazy"
+            className={`size-full object-cover transition-transform duration-300 group-hover:scale-105 ${soldOut ? 'opacity-50 grayscale' : ''}`}
           />
-          <span className="absolute left-1/2 top-3 -translate-x-1/2 font-display text-xs italic text-[#8a7563]">
-            No. {String(product.id).padStart(2, '0')}
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900 shadow-sm backdrop-blur-md">
+            {product.category}
           </span>
           {soldOut ? (
-            <span className="absolute bottom-3 left-3 rounded-full bg-ink px-2.5 py-1 text-[0.68rem] font-semibold text-paper">Hết hàng</span>
+            <span className="absolute bottom-2.5 left-2.5 rounded-full bg-stone-900/85 px-2 py-0.5 text-[10px] font-bold text-white">Hết hàng</span>
           ) : product.stock <= LOW_STOCK ? (
-            <span className="absolute bottom-3 left-3 rounded-full bg-accent px-2.5 py-1 text-[0.68rem] font-semibold text-[#f7f1e6]">
+            <span className="absolute bottom-2.5 left-2.5 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
               Chỉ còn {product.stock} ly
             </span>
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col px-2 pb-1 pt-4">
-          <p className="label-caps text-[0.6rem]!">{product.category}</p>
-          <div className="mt-1.5 flex items-baseline gap-2">
-            <h3 className="font-display text-xl font-medium leading-snug">{product.name}</h3>
-            <span className="leader" aria-hidden />
-            <span className="font-display text-lg tabular-nums text-accent">{formatVnd(product.price)}</span>
-          </div>
-          <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-ink-soft">{product.description}</p>
+        <div className="p-4">
+          <h3 className="line-clamp-1 text-sm font-extrabold text-stone-900 transition group-hover:text-amber-800">{product.name}</h3>
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-stone-500">{product.description}</p>
         </div>
-      </Link>
+      </div>
 
-      <button
-        type="button"
-        onClick={quickAdd}
-        disabled={soldOut}
-        aria-label={`Thêm nhanh ${product.name} size Nhỏ vào giỏ`}
-        className="absolute right-5 top-5 grid size-10 place-items-center rounded-full border border-line bg-card text-ink shadow-sm transition hover:bg-brand hover:text-brand-ink disabled:hidden sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
-      >
-        <PlusIcon width={18} height={18} />
-      </button>
+      <div className="flex items-center justify-between px-4 pb-4">
+        <div>
+          <span className="block text-[10px] font-semibold uppercase text-stone-400">Giá từ</span>
+          <span className="text-sm font-black text-amber-900">{formatVnd(product.price)}</span>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(product);
+          }}
+          disabled={soldOut}
+          aria-label={`Chọn ${product.name}`}
+          className="flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100 active:scale-95 disabled:opacity-40"
+        >
+          <Plus className="size-3.5" />
+          <span>Chọn</span>
+        </button>
+      </div>
     </article>
   );
 }
 
 export function ProductCardSkeleton() {
   return (
-    <div className="p-2" aria-hidden>
-      <div className="arch skeleton aspect-[4/4.4]" />
-      <div className="skeleton mt-5 h-3 w-16 rounded" />
-      <div className="skeleton mt-3 h-5 w-3/4 rounded" />
-      <div className="skeleton mt-3 h-3 w-full rounded" />
+    <div className="animate-pulse space-y-3 rounded-2xl border border-stone-200/80 bg-white p-4" aria-hidden>
+      <div className="h-44 w-full rounded-xl bg-stone-200" />
+      <div className="h-4 w-3/4 rounded bg-stone-200" />
+      <div className="h-3 w-full rounded bg-stone-100" />
+      <div className="flex items-center justify-between pt-2">
+        <div className="h-4 w-1/3 rounded bg-stone-200" />
+        <div className="h-7 w-16 rounded-lg bg-stone-200" />
+      </div>
     </div>
   );
 }

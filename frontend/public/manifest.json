@@ -1,0 +1,16 @@
+{
+  "name": "BrewLite - Đặt Cà Phê Không Dùng Tiền Mặt",
+  "short_name": "BrewLite",
+  "description": "Đặt và thanh toán đồ uống không dùng tiền mặt, theo dõi đơn tại quầy.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDFBF7",
+  "theme_color": "#92400E",
+  "lang": "vi",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

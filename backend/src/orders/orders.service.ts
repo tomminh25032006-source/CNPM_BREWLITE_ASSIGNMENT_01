@@ -56,6 +56,7 @@ export class OrdersService {
     try {
       const order = await this.inventory.withStockTransaction(async (tx) => {
         await this.inventory.reserve(tx, sumQuantities(lines));
+        if (couponCode) await this.promotions.reserve(couponCode, tx);
         return tx.order.create({
           data: {
             userId: user.id,
@@ -136,6 +137,7 @@ export class OrdersService {
       if (to === 'CANCELLED') {
         const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
         await this.inventory.release(tx, sumQuantities(order.items));
+        if (order.couponCode) await this.promotions.release(order.couponCode, tx);
         if (from === 'PAID' && order.pointsEarned > 0) {
           // Đơn đã trả tiền bị hủy: thu hồi điểm đã cộng (hoàn tiền do cổng thanh toán xử lý).
           await tx.user.update({

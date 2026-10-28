@@ -5,8 +5,10 @@ export const metadata = { title: 'Đăng nhập' };
 
 export default function LoginPage() {
   return (
-    <Suspense>
-      <AuthForm mode="login" />
-    </Suspense>
+    <div className="px-4 py-12">
+      <Suspense>
+        <AuthForm mode="login" />
+      </Suspense>
+    </div>
   );
 }

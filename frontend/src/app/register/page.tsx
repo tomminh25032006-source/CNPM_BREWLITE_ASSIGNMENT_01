@@ -5,8 +5,10 @@ export const metadata = { title: 'Đăng ký' };
 
 export default function RegisterPage() {
   return (
-    <Suspense>
-      <AuthForm mode="register" />
-    </Suspense>
+    <div className="px-4 py-12">
+      <Suspense>
+        <AuthForm mode="register" />
+      </Suspense>
+    </div>
   );
 }
