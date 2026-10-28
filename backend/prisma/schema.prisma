@@ -1,0 +1,149 @@
+// BrewLite – mô hình dữ liệu (Mục 12.2 của đề + các trường phục vụ Task 10)
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PAYMENT_FAILED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum Size {
+  S
+  M
+  L
+}
+
+enum PaymentMethod {
+  WALLET
+  CARD
+}
+
+enum PaymentStatus {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String      @default("")
+  category    String
+  price       Int // VND, giá size S
+  imageUrl    String
+  stock       Int         @default(0)
+  /// Phiên bản dùng cho optimistic locking khi trừ tồn kho
+  version     Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  orderItems  OrderItem[]
+}
+
+model Topping {
+  id    Int    @id @default(autoincrement())
+  name  String
+  price Int
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  fullName      String
+  passwordHash  String
+  role          Role     @default(CUSTOMER)
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  orders        Order[]
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id])
+  status         OrderStatus @default(PENDING)
+  subtotal       Int
+  discount       Int         @default(0)
+  total          Int
+  couponCode     String?
+  pointsEarned   Int         @default(0)
+  note           String?
+  /// Khóa idempotent khi tạo đơn: cùng user + cùng key => cùng một đơn
+  idempotencyKey String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+  payments       Payment[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  orderId     Int
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int
+  product     Product @relation(fields: [productId], references: [id])
+  productName String
+  size        Size
+  /// Danh sách topping đã chọn: [{ id, name, price }]
+  toppings    Json    @default("[]")
+  unitPrice   Int
+  qty         Int
+  lineTotal   Int
+}
+
+model Payment {
+  id             Int           @id @default(autoincrement())
+  orderId        Int
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Unique => gửi lại cùng Idempotency-Key không tạo giao dịch thứ hai
+  idempotencyKey String        @unique
+  amount         Int
+  method         PaymentMethod
+  status         PaymentStatus @default(PROCESSING)
+  transactionRef String?
+  failureReason  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([orderId])
+}
+
+model Coupon {
+  id          Int          @id @default(autoincrement())
+  code        String       @unique
+  description String
+  type        DiscountType
+  value       Int // PERCENT: 1–100, FIXED: số tiền VND
+  minSubtotal Int          @default(0)
+  maxDiscount Int?
+  usageLimit  Int?
+  usedCount   Int          @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean      @default(true)
+}
