@@ -1,0 +1,46 @@
+name: brewlite
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: brewlite
+      POSTGRES_PASSWORD: brewlite
+      POSTGRES_DB: brewlite
+    ports:
+      - "5433:5432" # host 5433 để tránh đụng PostgreSQL cài sẵn trên máy
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brewlite -d brewlite"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://brewlite:brewlite@db:5432/brewlite?schema=public
+      JWT_SECRET: ${JWT_SECRET:-brewlite-docker-secret}
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3000
+      MOCK_PAYMENT_DELAY_MS: 600
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
