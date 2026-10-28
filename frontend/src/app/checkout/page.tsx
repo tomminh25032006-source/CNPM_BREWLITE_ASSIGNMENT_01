@@ -1,13 +1,12 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, type FormEvent } from 'react';
-import { ArrowLeftIcon, CardIcon, WalletIcon } from '@/components/icons';
+import { CreditCard, ShieldCheck, Wallet } from 'lucide-react';
 import { Receipt, type ReceiptLine } from '@/components/Receipt';
 import { RequireAuth } from '@/components/RequireAuth';
-import { Alert, EmptyState, ErrorState, PageTitle, Spinner } from '@/components/ui';
+import { Alert, BackLink, EmptyState, ErrorState, Page, PageSpinner, PageTitle, Spinner } from '@/components/ui';
 import { api, ApiError, errorMessage } from '@/lib/api';
 import { formatVnd, orderCode } from '@/lib/format';
 import { newIdempotencyKey } from '@/lib/hooks';
@@ -38,7 +37,11 @@ function CartCheckout() {
   const coupon = useCouponCheck(couponCode, subtotal);
 
   if (lines.length === 0) {
-    return <EmptyState title="Giỏ hàng trống" description="Hãy chọn món trước khi thanh toán." action={{ label: 'Xem thực đơn', href: '/' }} />;
+    return (
+      <Page>
+        <EmptyState title="Giỏ hàng trống" description="Hãy chọn món trước khi thanh toán." action={{ label: 'Xem thực đơn', href: '/' }} />
+      </Page>
+    );
   }
 
   const validCoupon = coupon.data?.valid ? coupon.data : null;
@@ -102,15 +105,23 @@ function ExistingOrderCheckout({ orderId }: { orderId: number }) {
     queryFn: () => api<Order>(`/orders/${orderId}`),
   });
 
-  if (isLoading) return <div className="grid min-h-[40vh] place-items-center text-muted"><Spinner className="size-6" /></div>;
-  if (isError || !order) return <ErrorState message={errorMessage(error)} onRetry={() => refetch()} />;
+  if (isLoading) return <PageSpinner />;
+  if (isError || !order) {
+    return (
+      <Page>
+        <ErrorState message={errorMessage(error)} onRetry={() => refetch()} />
+      </Page>
+    );
+  }
   if (order.status !== 'PENDING' && order.status !== 'PAYMENT_FAILED') {
     return (
-      <EmptyState
-        title={`Đơn ${orderCode(order.id)} không cần thanh toán`}
-        description="Đơn này đã được thanh toán hoặc đã hủy."
-        action={{ label: 'Xem chi tiết đơn', href: `/orders/${order.id}` }}
-      />
+      <Page>
+        <EmptyState
+          title={`Đơn ${orderCode(order.id)} không cần thanh toán`}
+          description="Đơn này đã được thanh toán hoặc đã hủy."
+          action={{ label: 'Xem chi tiết đơn', href: `/orders/${order.id}` }}
+        />
+      </Page>
     );
   }
 
@@ -219,58 +230,59 @@ function PaymentScreen({
   };
 
   return (
-    <>
-      <Link href={backHref} className="btn-ghost -ml-4 mb-2">
-        <ArrowLeftIcon width={18} height={18} /> {backLabel}
-      </Link>
-      <PageTitle eyebrow="Thanh toán" title="Không dùng tiền mặt" />
+    <Page>
+      <BackLink href={backHref}>{backLabel}</BackLink>
+      <PageTitle eyebrow="Thanh toán" title="Thanh toán không tiền mặt">
+        Chọn phương thức và xác nhận – đơn sẽ chuyển sang <b>PAID</b> khi giao dịch thành công.
+      </PageTitle>
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <form onSubmit={submit} className="space-y-8 animate-rise">
-          <fieldset>
-            <legend className="label-caps mb-3">Phương thức</legend>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <form onSubmit={submit} className="space-y-6 lg:col-span-7">
+          <fieldset className="panel p-5">
+            <legend className="sr-only">Phương thức thanh toán</legend>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-stone-900">Phương thức thanh toán</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <MethodOption
                 active={method === 'WALLET'}
                 onSelect={() => chooseMethod('WALLET')}
-                icon={<WalletIcon />}
+                icon={<Wallet className="size-5" />}
                 title="Ví điện tử"
                 hint="Mô phỏng MoMo · VNPay"
               />
               <MethodOption
                 active={method === 'CARD'}
                 onSelect={() => chooseMethod('CARD')}
-                icon={<CardIcon />}
+                icon={<CreditCard className="size-5" />}
                 title="Thẻ ngân hàng"
                 hint="Visa · Mastercard · ATM nội địa"
               />
             </div>
+
+            {method === 'CARD' && (
+              <div className="mt-5 animate-rise">
+                <label htmlFor="card" className="mb-1 block text-xs font-bold text-stone-700">Số thẻ</label>
+                <input
+                  id="card"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  value={card}
+                  onChange={(e) => {
+                    setCard(formatCard(e.target.value));
+                    useCart.getState().setCheckout({ paymentKey: null });
+                  }}
+                  className="field font-mono tracking-widest"
+                  placeholder="0000 0000 0000 0000"
+                  required
+                  pattern="[0-9 ]{12,23}"
+                />
+                <p className="mt-2 text-[11px] text-stone-500">
+                  Thẻ thử: <code>…4242</code> thành công · <code>…0002</code> bị từ chối · <code>…9995</code> không đủ số dư
+                </p>
+              </div>
+            )}
           </fieldset>
 
-          {method === 'CARD' && (
-            <div className="animate-rise">
-              <label htmlFor="card" className="label-caps mb-2 block">Số thẻ</label>
-              <input
-                id="card"
-                inputMode="numeric"
-                autoComplete="cc-number"
-                value={card}
-                onChange={(e) => {
-                  setCard(formatCard(e.target.value));
-                  useCart.getState().setCheckout({ paymentKey: null });
-                }}
-                className="field font-mono tracking-widest"
-                placeholder="0000 0000 0000 0000"
-                required
-                pattern="[0-9 ]{12,23}"
-              />
-              <p className="mt-2 text-xs text-muted">
-                Thẻ thử: <code>…4242</code> thành công · <code>…0002</code> bị từ chối · <code>…9995</code> không đủ số dư
-              </p>
-            </div>
-          )}
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-dashed border-line px-4 py-3 text-sm">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-dashed border-stone-300 bg-white px-4 py-3 text-xs">
             <input
               type="checkbox"
               checked={simulateFailure}
@@ -278,37 +290,38 @@ function PaymentScreen({
                 setSimulateFailure(e.target.checked);
                 useCart.getState().setCheckout({ paymentKey: null });
               }}
-              className="mt-0.5 size-4 accent-accent"
+              className="mt-0.5 size-4 accent-amber-800"
             />
             <span>
-              <span className="font-medium">Chế độ demo: mô phỏng thanh toán lỗi</span>
-              <span className="block text-xs text-muted">Dùng để trình diễn trạng thái PAYMENT_FAILED và thử lại.</span>
+              <span className="font-bold text-stone-800">Chế độ demo: mô phỏng thanh toán lỗi</span>
+              <span className="block text-stone-500">Dùng để trình diễn trạng thái PAYMENT_FAILED và thử lại.</span>
             </span>
           </label>
 
           {failure && (
             <Alert>
-              <p className="font-semibold">Thanh toán không thành công</p>
+              <p className="font-bold">Thanh toán không thành công</p>
               <p className="mt-0.5">{failure}</p>
               <p className="mt-1 opacity-80">Giỏ hàng của bạn vẫn được giữ nguyên – bạn có thể thử lại hoặc đổi phương thức.</p>
             </Alert>
           )}
 
-          <button type="submit" disabled={busy} className="btn-primary h-14 w-full justify-between text-base">
+          <button type="submit" disabled={busy} className="btn-primary h-13 w-full justify-between text-base shadow-brew-float">
             <span className="flex items-center gap-2">
               {busy && <Spinner />}
               {busy ? 'Đang xử lý giao dịch…' : failure ? 'Thử thanh toán lại' : 'Xác nhận trả'}
             </span>
-            <span className="font-display text-lg tabular-nums">{formatVnd(total)}</span>
+            <span className="tabular-nums">{formatVnd(total)}</span>
           </button>
-          <p className="text-center text-xs text-muted">
+          <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-stone-400">
+            <ShieldCheck className="size-3.5 shrink-0" />
             Giao dịch được bảo vệ bằng Idempotency-Key – bấm nhiều lần cũng không bị trừ tiền hai lần.
           </p>
         </form>
 
-        <aside className="lg:sticky lg:top-32 lg:self-start">{receipt}</aside>
+        <aside className="lg:col-span-5 lg:sticky lg:top-24 lg:self-start">{receipt}</aside>
       </div>
-    </>
+    </Page>
   );
 }
 
@@ -327,19 +340,22 @@ function MethodOption({
 }) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${
-        active ? 'border-ink bg-card shadow-[inset_0_0_0_1px_var(--ink)]' : 'border-line hover:border-ink/40'
+      className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition ${
+        active ? 'border-amber-700 bg-amber-50/70 ring-2 ring-amber-700/20' : 'border-stone-200 bg-white hover:border-stone-300'
       }`}
     >
       <input type="radio" name="method" checked={active} onChange={onSelect} className="sr-only" />
-      <span className={`grid size-11 place-items-center rounded-full ${active ? 'bg-brand text-brand-ink' : 'bg-paper-2 text-ink-soft'}`}>
+      <span className={`grid size-10 place-items-center rounded-xl ${active ? 'bg-amber-800 text-white' : 'bg-stone-100 text-stone-500'}`}>
         {icon}
       </span>
       <span className="flex-1">
-        <span className="block font-semibold">{title}</span>
-        <span className="block text-xs text-muted">{hint}</span>
+        <span className="block text-sm font-extrabold text-stone-900">{title}</span>
+        <span className="block text-[11px] text-stone-500">{hint}</span>
       </span>
-      <span className={`size-5 rounded-full border-2 ${active ? 'border-brand bg-brand shadow-[inset_0_0_0_3px_var(--card)]' : 'border-ink/30'}`} aria-hidden />
+      <span
+        className={`size-4 rounded-full border-2 ${active ? 'border-amber-800 bg-amber-800 shadow-[inset_0_0_0_3px_white]' : 'border-stone-300'}`}
+        aria-hidden
+      />
     </label>
   );
 }

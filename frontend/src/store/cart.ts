@@ -33,6 +33,8 @@ interface CartState {
   remove: (lineId: string) => void;
   setCoupon: (code: string | null) => void;
   clear: () => void;
+  /** Người dùng xóa hết giỏ: hủy luôn đơn chờ thanh toán (nếu có) để trả lại tồn kho. */
+  empty: () => void;
   setCheckout: (patch: Partial<Pick<CartState, 'pendingOrderId' | 'orderKey' | 'paymentKey'>>) => void;
 }
 
@@ -77,6 +79,8 @@ export const useCart = create<CartState>()(
       setCoupon: (couponCode) => set((s) => ({ couponCode, ...invalidateOrder(s) })),
 
       clear: () => set({ lines: [], couponCode: null, pendingOrderId: null, orderKey: null, paymentKey: null }),
+
+      empty: () => set((s) => ({ lines: [], couponCode: null, ...invalidateOrder(s) })),
 
       setCheckout: (patch) => set(patch),
     }),

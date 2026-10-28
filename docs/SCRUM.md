@@ -18,13 +18,13 @@
 | Nhóm phát triển | Phân tích, thiết kế, lập trình, kiểm thử, bàn giao |
 | Đơn vị thanh toán | Được mô phỏng bằng Mock Payment Gateway |
 
-### Vai trò Scrum (điền tên thành viên)
+### Vai trò Scrum
 
-| Vai trò | Thành viên |
-|---|---|
-| Product Owner | … |
-| Scrum Master | … |
-| Development Team | … |
+| Vai trò | Thành viên | Trách nhiệm |
+|---|---|---|
+| Product Owner | Minh | Xác định yêu cầu, sắp xếp ưu tiên Product Backlog, nghiệm thu Increment sau mỗi Sprint |
+| Scrum Master | Phat | Tổ chức Sprint Planning / Daily Scrum / Review / Retrospective, theo dõi burndown và DoD, điều phối bàn giao |
+| Development Team | Minh, Nhan, Thien, Phat | Phân tích, thiết kế, lập trình, kiểm thử; review Pull Request của nhau. Thien phụ trách thêm tài liệu Scrum (burndown, Retrospective) |
 
 ## 2. Yêu cầu
 
@@ -47,20 +47,22 @@
 
 Sắp xếp từ dễ đến khó. Mỗi task đạt DoD được 1 điểm.
 
-| # | User Story | Sprint | SP | Trạng thái |
-|---|---|---|---|---|
-| 1 | Khởi tạo dự án và cấu trúc | 1 | 2 | ✅ Done |
-| 2 | API danh sách sản phẩm | 1 | 2 | ✅ Done |
-| 3 | Trang Menu (Frontend) | 1 | 3 | ✅ Done |
-| 4 | Chi tiết và tùy chọn sản phẩm | 1 | 3 | ✅ Done |
-| 5 | Giỏ hàng | 2 | 5 | ✅ Done |
-| 6 | API tạo đơn hàng | 2 | 5 | ✅ Done |
-| 7 | Đăng ký / Đăng nhập (JWT) | 2 | 5 | ✅ Done |
-| 8 | Thanh toán không tiền mặt | 3 | 5 | ✅ Done |
-| 9 | Xác nhận, lịch sử đơn & bàn giao | 3 | 5 | ✅ Done |
-| 10 | Nghiệp vụ backend | 3 | 8 | ✅ Done |
+| # | User Story | Sprint | SP | Người phụ trách | Trạng thái |
+|---|---|---|---|---|---|
+| 1 | Khởi tạo dự án và cấu trúc | 1 | 2 | Minh | ✅ Done |
+| 2 | API danh sách sản phẩm | 1 | 2 | Minh | ✅ Done |
+| 3 | Trang Menu (Frontend) | 1 | 3 | Minh | ✅ Done |
+| 4 | Chi tiết và tùy chọn sản phẩm | 1 | 3 | Nhan | ✅ Done |
+| 5 | Giỏ hàng | 2 | 5 | Nhan | ✅ Done |
+| 6 | API tạo đơn hàng | 2 | 5 | Nhan | ✅ Done |
+| 7 | Đăng ký / Đăng nhập (JWT) | 2 | 5 | Thien | ✅ Done |
+| 8 | Thanh toán không tiền mặt | 3 | 5 | Thien | ✅ Done |
+| 9 | Xác nhận, lịch sử đơn & bàn giao | 3 | 5 | Phat | ✅ Done |
+| 10 | Nghiệp vụ backend | 3 | 8 | Phat | ✅ Done |
 
 SP = story points (ước lượng Planning Poker, thang Fibonacci).
+
+**Cải tiến sau rà soát Sprint 3 (Phat):** đổi giao diện sang tông amber, chuyển màn hình chi tiết món của Task 4 sang dạng popup, thêm popup đăng nhập; sửa lỗi số lượt dùng mã giảm giá có thể vượt `usageLimit` khi đặt đồng thời (kèm integration test).
 
 ## 4. User Stories & tiêu chí chấp nhận
 
@@ -77,12 +79,13 @@ SP = story points (ước lượng Planning Poker, thang Fibonacci).
 
 ### US-03 – Trang Menu
 *Là* khách hàng, *tôi muốn* xem menu dạng lưới có hình *để* chọn món nhanh.
-- [x] Gọi `/products` và render lưới sản phẩm, có lọc theo danh mục.
+- [x] Gọi `/products` và render lưới sản phẩm (ảnh, tên, giá), có lọc theo danh mục và ô tìm kiếm (không phân biệt dấu).
 - [x] Có skeleton khi đang tải, thông báo khi danh mục rỗng, nút thử lại khi lỗi mạng.
 - [x] Hiện nhãn “Chỉ còn N ly” hoặc “Hết hàng”.
 
 ### US-04 – Chi tiết & tùy chọn sản phẩm
 *Là* khách hàng, *tôi muốn* chọn size và topping *để* có ly đúng khẩu vị.
+- [x] Bấm vào món mở popup chi tiết (dữ liệu từ `GET /products/:id`).
 - [x] Chọn size S/M/L (cộng thêm 0 / 5.000 / 10.000đ) và nhiều topping.
 - [x] Giá cập nhật ngay theo tùy chọn và số lượng.
 
@@ -100,7 +103,8 @@ SP = story points (ước lượng Planning Poker, thang Fibonacci).
 ### US-07 – Đăng ký / Đăng nhập
 *Là* khách hàng, *tôi muốn* có tài khoản *để* đặt đơn và tích điểm.
 - [x] `POST /auth/register` và `POST /auth/login`; mật khẩu băm bằng bcrypt; trả JWT.
-- [x] Guard bảo vệ route đặt đơn và thanh toán; frontend chuyển sang trang đăng nhập rồi quay lại trang đang mở.
+- [x] Guard bảo vệ route đặt đơn và thanh toán.
+- [x] Frontend có popup đăng nhập/đăng ký trên thanh điều hướng; bấm *Thanh toán* khi chưa đăng nhập sẽ mở popup rồi chuyển tiếp sang trang thanh toán.
 
 ### US-08 – Thanh toán không tiền mặt
 *Là* khách hàng, *tôi muốn* thanh toán đơn bằng ví điện tử hoặc thẻ *để* không cần mang tiền mặt.
@@ -120,7 +124,7 @@ SP = story points (ước lượng Planning Poker, thang Fibonacci).
 - [x] State machine chặn mọi chuyển tiếp không hợp lệ (409).
 - [x] Gửi 2 lần cùng Idempotency-Key chỉ tạo 1 đơn và 1 giao dịch.
 - [x] Đặt đồng thời không vượt tồn kho (transaction + optimistic locking).
-- [x] Áp mã giảm giá hợp lệ; cộng điểm sau khi đơn chuyển `PAID`.
+- [x] Áp mã giảm giá hợp lệ, không vượt số lượt dùng khi đặt đồng thời, hủy đơn trả lại lượt; cộng điểm sau khi đơn chuyển `PAID`.
 - [x] Có unit test và integration test chứng minh các ý (a), (b), (c).
 
 ## 5. Kế hoạch Sprint
@@ -140,6 +144,18 @@ SP = story points (ước lượng Planning Poker, thang Fibonacci).
 | Lý tưởng | 18 | 16.2 | 14.4 | 12.6 | 10.8 | 9 | 7.2 | 5.4 | 3.6 | 1.8 | 0 |
 | Thực tế | 18 | | | | | | | | | | |
 
+> Mỗi Sprint nhóm điền số story point còn lại vào dòng *Thực tế* sau Daily Scrum. Đường thực tế nằm trên đường lý tưởng → đang chậm tiến độ; nằm dưới → vượt tiến độ.
+
+### Sprint Review & Retrospective
+
+> Bản nháp – Scrum Master và Thien chỉnh lại theo nội dung buổi họp thật của nhóm.
+
+| Sprint | Increment demo | Làm tốt | Cần cải thiện | Hành động Sprint sau |
+|---|---|---|---|---|
+| 1 | Menu dạng lưới + màn hình chi tiết món (size, topping) | Dựng monorepo, PostgreSQL bằng Docker và seed dữ liệu sớm nên cả nhóm chạy được ngay; API có xử lý 404 | Code được đưa lên repo dồn vào cuối; email Git của Minh gõ sai nên commit không gắn với tài khoản GitHub | Mỗi người kiểm tra `git config user.email`; push sau mỗi sub-task thay vì dồn cuối |
+| 2 | Giỏ hàng, API tạo đơn, đăng ký/đăng nhập | Validate bằng class-validator, giá luôn tính lại ở server, mật khẩu băm bcrypt + JWT | Commit Task 7–8 chỉ ghi “task7”, “task 8”; commit thẳng lên `main`, chưa có review | Quy ước commit `Task N: mô tả`; làm trên nhánh riêng, mở Pull Request và có ít nhất 1 người review |
+| 3 | Thanh toán Ví/Thẻ, xác nhận & lịch sử đơn, nghiệp vụ backend, docker-compose | Task 10 có integration test chứng minh (a) chặn chuyển trạng thái sai, (b) idempotency, (c) không vượt tồn kho | Lỗi mã giảm giá vượt số lượt chỉ phát hiện khi rà soát cuối vì chưa có test cho khuyến mãi khi đặt đồng thời | Viết test tái hiện lỗi trước khi sửa; rà soát theo đề và DoD trước mỗi Sprint Review |
+
 ## 6. Definition of Done
 
 Một task chỉ được tính là Done khi:
@@ -153,11 +169,11 @@ Một task chỉ được tính là Done khi:
 ## 7. Kịch bản demo bàn giao (Sprint Review cuối)
 
 1. `docker compose up --build` rồi mở http://localhost:3000.
-2. Xem menu, mở **Cappuccino**, chọn size L + Kem cheese, số lượng 2, thêm vào giỏ.
+2. Xem menu, thử ô tìm kiếm, bấm **Cappuccino** để mở popup, chọn size L + Kem cheese, số lượng 2, thêm vào giỏ.
 3. Thêm **Trà đào**; trong giỏ áp mã **CHAOBAN** để thấy phần giảm giá.
-4. Bấm *Thanh toán*: được chuyển sang trang đăng nhập (`demo@brewlite.vn` / `123456`), đăng nhập xong quay lại trang thanh toán.
+4. Bấm *Thanh toán*: popup đăng nhập hiện ra (`demo@brewlite.vn` / `123456`, có nút điền sẵn), đăng nhập xong chuyển sang trang thanh toán.
 5. Bật *Chế độ demo: mô phỏng thanh toán lỗi* rồi *Xác nhận trả*: đơn chuyển `PAYMENT_FAILED` và giỏ vẫn còn nguyên.
-6. Tắt chế độ lỗi, chọn Thẻ `4242…`, trả tiền: màn hình xác nhận hiện mã đơn, con dấu “Đã thanh toán” và số điểm được cộng.
+6. Tắt chế độ lỗi, chọn Thẻ `4242…`, trả tiền: màn hình xác nhận hiện mã đơn, trạng thái `PAID`, tiến trình đơn và số điểm được cộng.
 7. Mở tab ẩn danh, đăng nhập `barista@brewlite.vn`, vào *Quầy pha chế* và chuyển đơn qua *Nhận pha*, *Pha xong*, *Đã giao khách*. Trang của khách tự cập nhật theo.
 8. Chạy `npm run test:int` để trình bày 3 tiêu chí (a), (b), (c).
 9. Retrospective: điều làm tốt / cần cải thiện; ghi nhận backlog cho phiên bản sau.

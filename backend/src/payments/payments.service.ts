@@ -5,7 +5,6 @@ import { loyaltyPointsFor } from '../common/pricing';
 import { transitionOrder } from '../orders/order-transitions';
 import { ORDER_INCLUDE } from '../orders/orders.service';
 import { isUniqueViolation, PrismaService } from '../prisma/prisma.service';
-import { PromotionsService } from '../promotions/promotions.service';
 import { CreatePaymentDto } from './dto';
 import { MockPaymentGateway } from './mock-payment.gateway';
 
@@ -14,7 +13,6 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: MockPaymentGateway,
-    private readonly promotions: PromotionsService,
   ) {}
 
   /**
@@ -24,7 +22,7 @@ export class PaymentsService {
    *     chỉ một request thắng khi gửi trùng song song; khóa dòng Order (FOR UPDATE)
    *     để hai key khác nhau không cùng trả tiền cho một đơn.
    *  3. Gọi cổng thanh toán (ngoài transaction).
-   *  4. Ghi kết quả: PAID (+ điểm thưởng, + lượt dùng mã) hoặc PAYMENT_FAILED.
+   *  4. Ghi kết quả: PAID (+ điểm thưởng) hoặc PAYMENT_FAILED. Lượt dùng mã đã được giữ lúc tạo đơn.
    */
   async pay(user: AuthUser, dto: CreatePaymentDto, idempotencyKey: string) {
     const previous = await this.prisma.payment.findUnique({ where: { idempotencyKey } });
@@ -80,7 +78,6 @@ export class PaymentsService {
         const points = loyaltyPointsFor(order.total);
         await tx.order.update({ where: { id: order.id }, data: { pointsEarned: points } });
         await tx.user.update({ where: { id: order.userId }, data: { loyaltyPoints: { increment: points } } });
-        if (order.couponCode) await this.promotions.markUsed(order.couponCode, tx);
       } else {
         finalPayment = await tx.payment.update({
           where: { id: payment.id },

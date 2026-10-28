@@ -7,7 +7,7 @@ Tài liệu Scrum (backlog, user story, sprint, DoD): [`docs/SCRUM.md`](docs/SCR
 
 | Thành phần | Công nghệ |
 |---|---|
-| Frontend | Next.js 15 (App Router, React 19, TypeScript), TailwindCSS 4, React Query, Zustand |
+| Frontend | Next.js 15 (App Router, React 19, TypeScript), TailwindCSS 4, React Query, Zustand, lucide-react |
 | Backend | NestJS 11 (TypeScript), REST, class-validator, JWT (Passport), bcrypt |
 | CSDL | PostgreSQL 16 + Prisma 6 |
 | Thanh toán | Mock Payment Gateway (mô phỏng MoMo / VNPay / thẻ) |
@@ -56,6 +56,7 @@ docker compose up -d db
 cd backend
 cp .env.example .env
 npm install
+npx prisma generate
 npx prisma migrate deploy
 npm run db:seed
 npm run start:dev
@@ -87,6 +88,7 @@ Tiêu chí chấm Task 10 ↔ file test:
 | (b) Gửi 2 lần cùng Idempotency-Key chỉ tạo 1 đơn / 1 giao dịch | `test/idempotency.int-spec.ts` (gửi tuần tự và gửi song song) |
 | (c) Đặt đồng thời không vượt tồn kho | `test/inventory-concurrency.int-spec.ts` (12 khách cùng tranh 5 ly) |
 | Luồng end-to-end, validate, phân quyền | `test/orders-flow.int-spec.ts` |
+| Mã giảm giá không vượt số lượt khi đặt đồng thời; hủy đơn trả lại lượt | `test/coupon-limit.int-spec.ts` (8 khách tranh 3 lượt) |
 
 ## 4. API
 
@@ -138,10 +140,10 @@ start → PENDING ──thanh toán OK──▶ PAID ──barista nhận──�
 1. **Order State Machine** (`orders/order-state-machine.ts`). Bảng `ORDER_TRANSITIONS` liệt kê các chuyển tiếp hợp lệ, `assertTransition()` ném lỗi 409 cho mọi chuyển tiếp khác. Câu lệnh UPDATE có điều kiện `WHERE status = <from>` để hai request song song không cùng chuyển trạng thái được.
 2. **Thanh toán idempotent** (`payments/payments.service.ts`). Request đầu tiên với một key ghi một bản ghi `Payment(PROCESSING)`; cột `idempotencyKey` là UNIQUE nên request trùng key bị chặn ngay ở CSDL. Dòng `Order` được khóa (`FOR UPDATE`) để hai key khác nhau không cùng trả tiền cho một đơn. Gửi lại cùng key sẽ nhận lại kết quả cũ (header `Idempotent-Replayed: true`) mà không gọi cổng thanh toán lần nữa. `POST /orders` cũng hỗ trợ `Idempotency-Key` để không tạo đơn hai lần.
 3. **Tồn kho khi đặt đồng thời** (`inventory/inventory.service.ts`). Kho được trừ trong transaction bằng optimistic locking: `UPDATE product SET stock = stock - n, version = version + 1 WHERE id = ? AND version = ?`. Nếu không cập nhật được dòng nào (do xung đột), transaction rollback và chạy lại với backoff ngẫu nhiên. Khi không đủ hàng, API trả 409 `OutOfStock`. Hủy đơn sẽ hoàn lại tồn kho.
-4. **Khuyến mãi & điểm thưởng** (`promotions/`). Mã giảm giá được kiểm tra hiệu lực, hạn dùng, số lượt và giá trị đơn tối thiểu. Khi đơn chuyển sang `PAID`, khách được cộng 1 điểm cho mỗi 1.000đ thực trả và mã được tính thêm một lượt dùng. Hủy một đơn đã `PAID` sẽ thu hồi điểm đã cộng.
+4. **Khuyến mãi & điểm thưởng** (`promotions/`). Mã giảm giá được kiểm tra hiệu lực, hạn dùng, số lượt và giá trị đơn tối thiểu. Lượt dùng mã được giữ ngay lúc tạo đơn, trong cùng transaction với phần trừ kho, bằng một câu `UPDATE ... WHERE "usedCount" < "usageLimit"` nguyên tử. Nhờ vậy nhiều khách đặt cùng lúc cũng không vượt số lượt. Hủy đơn (từ `PENDING`, `PAYMENT_FAILED` hoặc `PAID`) sẽ trả lại lượt dùng. Khi đơn chuyển sang `PAID`, khách được cộng 1 điểm cho mỗi 1.000đ thực trả. Hủy một đơn đã `PAID` sẽ thu hồi điểm đã cộng.
 
 ## 6. Yêu cầu phi chức năng
 
 - **Hiệu năng:** mọi response có header `X-Response-Time`; các truy vấn với dữ liệu mẫu đều dưới 50ms.
 - **Bảo mật:** mật khẩu được băm bằng bcrypt và không bao giờ trả về trong response. Route đặt đơn và thanh toán được bảo vệ bằng JWT guard; phân quyền STAFF dùng `RolesGuard`. `ValidationPipe` bật `whitelist` + `forbidNonWhitelisted`. Giá luôn được tính lại ở server, và khách chỉ xem được đơn của chính mình.
-- **Giao diện:** responsive (mobile → desktop), tự đổi giao diện sáng/tối theo hệ điều hành, có trạng thái loading/skeleton, lỗi và rỗng ở mọi màn hình.
+- **Giao diện:** responsive (mobile → desktop), tông nâu amber, font Plus Jakarta Sans; chi tiết món và đăng nhập/đăng ký mở dạng popup; có trạng thái loading/skeleton, lỗi và rỗng ở mọi màn hình. Ảnh sản phẩm lấy từ Unsplash nên máy demo cần có internet.
